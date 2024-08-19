@@ -46,8 +46,6 @@ This is a FastAPI-based application that serves as a drop-in replacement for Ope
 2. The API will be available at `http://localhost:7002` 
 
 3. Use the following endpoints:
-
-   - GET `/`: Returns the index.html file
    - GET `/models`: Lists supported models
    - POST `v1/chat/completions`: Main endpoint for chat completions (OpenAI-compatible)
 
