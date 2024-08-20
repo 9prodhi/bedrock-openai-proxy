@@ -72,3 +72,4 @@ bedrock/
 .ragtest/
 .pipelines
 .pipeline
+Dockerfile
