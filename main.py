@@ -33,8 +33,8 @@ class Message(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     messages: List[Message]
-    model: str = Field(default="mistral.mistral-7b-instruct-v0:2", alias="modelId")
-    max_tokens: int = 200
+    model: str = Field(default="mistral.mistral-7b-instruct-v0:2", alias="modelId") 
+    max_tokens: int = 900
     temperature: float = 0.5
     top_p: float = 0.9
     top_k: int = 50
@@ -86,14 +86,14 @@ class BedRockClient:
 
     async def invoke_model(self, model_id: str, prompt: str, max_tokens: int, temperature: float, top_p: float, top_k: int):
         client = self._get_bedrock_client(runtime=True)
-        
         body = json.dumps({
             "prompt": prompt,
             "max_tokens": max_tokens,
             "temperature": temperature,
             "top_p": top_p,
-            "top_k": top_k
+            "top_k": top_k,
         })
+        
 
         response = client.invoke_model(
             modelId=model_id,
@@ -177,11 +177,16 @@ async def models(request: Request, api_key: str = Depends(get_api_key)):
 bedrock_client = BedRockClient()
 
 @app.post("/v1/chat/completions")
-async def chat_completions(request: Request, data: ChatCompletionRequest, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+async def chat_completions(request: Request, data: ChatCompletionRequest, background_tasks: BackgroundTasks):
     checkpoint_start = time.time()
     
-    # Format the prompt according to Mistral's requirements
-    prompt = "<s>" + "".join([f"[INST] {msg.content} [/INST]" if msg.role == "user" else msg.content for msg in data.messages]) + "</s>"
+    formatted_messages = [
+        f"{{'role': '{msg.role}', 'content': '''{msg.content}'''}}"
+        for msg in data.messages
+    ]
+    
+    prompt = f"[{', '.join(formatted_messages)}]"
+
     
     checkpoint_loaded = time.time()
 
@@ -247,6 +252,8 @@ async def chat_completions(request: Request, data: ChatCompletionRequest, backgr
                 top_p=data.top_p,
                 top_k=data.top_k
             )
+            
+
             chat_response = ChatResponse(
                 id=f"chat{time.time_ns()}",
                 created=int(time.time()),
@@ -276,4 +283,4 @@ async def chat_completions(request: Request, data: ChatCompletionRequest, backgr
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7002)
+    uvicorn.run(app, host="127.0.0.1", port=7002)
